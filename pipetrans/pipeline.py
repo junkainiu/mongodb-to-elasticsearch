@@ -12,7 +12,7 @@ class Pipeline(object):
         self.cmd = None
         prev_cmd = None
         for p in pipeline:
-            cmd = CommandFactory.new(p)
+            cmd = CommandFactory.new(p, schema)
             if prev_cmd:
                 prev_cmd.next = cmd
             else:

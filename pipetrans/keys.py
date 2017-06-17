@@ -5,5 +5,12 @@ METRICS_AGGREGATE_KEYS = [
 ]
 
 BUCKETS_AGGREGATE_KEYS = [
-    'terms'
+    'terms',
+    'date_histogram'
+]
+
+BUCKETS_AGGREGATE_OPTIONALS = [
+    'format',
+    'order',
+    'size'
 ]
