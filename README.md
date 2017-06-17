@@ -21,14 +21,6 @@ mongo_pipe = [
                 "client_pktlen": {"$sum": "$client_pktlen"},
                 "server_pktlen": {"$sum": "$server_pktlen"}
             }
-        },
-        {
-            "$project": {
-                "_id": 1,
-                "client_pktlen": "$client_pktlen",
-                "pktlen": {"$add": ["$client_pktlen", "$server_pktlen"]},
-                "server_pktlen": "$server_pktlen"
-            }
         }
 ]
 
