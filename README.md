@@ -1,4 +1,4 @@
-# mongo_to_elasticsearch
+# mongodb-to-elasticsearch
 Transform mongo aggregate pipeline to Elasticsearch pipeline
 
 ## Exapmle
