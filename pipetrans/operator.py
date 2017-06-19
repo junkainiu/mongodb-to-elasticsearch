@@ -182,6 +182,7 @@ class GroupMetricOperator(GroupOperator):
         aggs = es_commands['aggs']
         while aggs.get('aggs'):
             aggs = aggs['aggs']
+    
         if len(aggs) > 1:
             aggs.update(commands)
         elif len(aggs) == 1:
@@ -236,9 +237,9 @@ class GroupBucketOperator(GroupOperator):
             }
         }
         aggs = es_commands['aggs']
-        while aggs.get('aggs'):
-            aggs = aggs['aggs']
-        aggs['aggs'] = commands
+        while aggs:
+            aggs = aggs.setdefault('aggs', {})
+        aggs.update(commands)
         return es_commands
 
 

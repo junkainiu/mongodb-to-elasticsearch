@@ -1,7 +1,10 @@
 from pipetrans import pipetrans
 import unittest
 
+
 class TestPipeline(unittest.TestCase):
+
+    maxDiff = None
 
     def test_no_schema(self):
         mongo_pipe = [
@@ -26,74 +29,72 @@ class TestPipeline(unittest.TestCase):
         schema = {}
         es_pipe = pipetrans(mongo_pipe, schema)
         expect = {
-          "query": {
-            "bool": {
-              "must": [
-                {
-                  "bool": {
-                    "should": [
-                      {
-                        "term": {
-                          "site": "sh1"
+            "query": {
+                "bool": {
+                    "must": [
+                        {
+                            "bool": {
+                                "should": [
+                                    {
+                                        "term": {
+                                            "site": "sh1"
+                                        }
+                                    },
+                                    {
+                                        "term": {
+                                            "site": "sh2"
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "bool": {
+                                "should": [
+                                    {
+                                        "term": {
+                                            "server_ip": "144.7.22.11"
+                                        }
+                                    }
+                                ]
+                            }
                         }
-                      },
-                      {
-                        "term": {
-                          "site": "sh2"
-                        }
-                      }
                     ]
-                  }
-                },
-                {
-                  "bool": {
-                    "should": [
-                      {
-                        "term": {
-                          "server_ip": "144.7.22.11"
-                        }
-                      }
-                    ]
-                  }
                 }
-              ]
-            }
-          },
-          "aggs": {
+            },
             "aggs": {
-              "component": {
-                "terms": {
-                  "field": "client_component"
-                }
-              },
-              "aggs": {
-                "ts": {
-                  "terms": {
-                    "field": "ts"
-                  }
+                "component": {
+                    "terms": {
+                        "field": "client_component"
+                    }
                 },
                 "aggs": {
-                  "aggs": {
-                    "server_pktlen": {
-                      "sum": {
-                        "field": "server_pktlen"
-                      }
+                    "ts": {
+                        "terms": {
+                            "field": "ts"
+                        }
                     },
-                    "client_pktlen": {
-                      "sum": {
-                        "field": "client_pktlen"
-                      }
+                    "aggs": {
+                        "aggs": {
+                            "server_pktlen": {
+                                "sum": {
+                                    "field": "server_pktlen"
+                                }
+                            },
+                            "client_pktlen": {
+                                "sum": {
+                                    "field": "client_pktlen"
+                                }
+                            }
+                        },
+                        "server_ip": {
+                            "terms": {
+                                "field": "server_ip"
+                            }
+                        }
                     }
-                  },
-                  "server_ip": {
-                    "terms": {
-                      "field": "server_ip"
-                    }
-                  }
                 }
-              }
             }
-          }
         }
         self.assertEqual(es_pipe, expect)
 
@@ -128,75 +129,73 @@ class TestPipeline(unittest.TestCase):
         }
         es_pipe = pipetrans(mongo_pipe, schema)
         expect = {
-          "query": {
-            "bool": {
-              "must": [
-                {
-                  "bool": {
-                    "should": [
-                      {
-                        "term": {
-                          "site": "sh1"
+            "query": {
+                "bool": {
+                    "must": [
+                        {
+                            "bool": {
+                                "should": [
+                                    {
+                                        "term": {
+                                            "site": "sh1"
+                                        }
+                                    },
+                                    {
+                                        "term": {
+                                            "site": "sh2"
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "bool": {
+                                "should": [
+                                    {
+                                        "term": {
+                                            "server_ip": "144.7.22.11"
+                                        }
+                                    }
+                                ]
+                            }
                         }
-                      },
-                      {
-                        "term": {
-                          "site": "sh2"
-                        }
-                      }
                     ]
-                  }
-                },
-                {
-                  "bool": {
-                    "should": [
-                      {
-                        "term": {
-                          "server_ip": "144.7.22.11"
-                        }
-                      }
-                    ]
-                  }
                 }
-              ]
-            }
-          },
-          "aggs": {
+            },
             "aggs": {
-              "component": {
-                "terms": {
-                  "field": "client_component"
-                }
-              },
-              "aggs": {
-                "aggs": {
-                  "ts": {
-                    "date_histogram": {
-                      "field": "ts",
-                      "format": "epoch_second"
+                "component": {
+                    "terms": {
+                        "field": "client_component"
                     }
-                  },
-                  "aggs": {
-                    "server_pktlen": {
-                      "sum": {
-                        "field": "server_pktlen"
-                      }
-                    },
-                    "client_pktlen": {
-                      "sum": {
-                        "field": "client_pktlen"
-                      }
-                    }
-                  }
                 },
-                "server_ip": {
-                  "terms": {
-                    "field": "server_ip"
-                  }
+                "aggs": {
+                    "aggs": {
+                        "ts": {
+                            "date_histogram": {
+                                "field": "ts",
+                                "format": "epoch_second"
+                            }
+                        },
+                        "aggs": {
+                            "server_pktlen": {
+                                "sum": {
+                                    "field": "server_pktlen"
+                                }
+                            },
+                            "client_pktlen": {
+                                "sum": {
+                                    "field": "client_pktlen"
+                                }
+                            }
+                        }
+                    },
+                    "server_ip": {
+                        "terms": {
+                            "field": "server_ip"
+                        }
+                    }
                 }
-              }
             }
-          }
         }
         self.assertEqual(es_pipe, expect)
 
