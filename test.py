@@ -199,6 +199,6 @@ class TestPipeline(unittest.TestCase):
           }
         }
         self.assertEqual(es_pipe, expect)
-        
+
 if __name__ == '__main__':
     unittest.main()
