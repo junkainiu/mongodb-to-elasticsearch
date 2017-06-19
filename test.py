@@ -66,36 +66,37 @@ class TestPipeline(unittest.TestCase):
                 "component": {
                     "terms": {
                         "field": "client_component"
-                    }
-                },
-                "aggs": {
-                    "ts": {
-                        "terms": {
-                            "field": "ts"
-                        }
                     },
                     "aggs": {
-                        "aggs": {
-                            "server_pktlen": {
-                                "sum": {
-                                    "field": "server_pktlen"
-                                }
-                            },
-                            "client_pktlen": {
-                                "sum": {
-                                    "field": "client_pktlen"
-                                }
-                            }
-                        },
-                        "server_ip": {
+                        "ts": {
                             "terms": {
-                                "field": "server_ip"
+                                "field": "ts"
+                            },
+                            "aggs": {
+                                "server_ip": {
+                                    "terms": {
+                                        "field": "server_ip"
+                                    },
+                                    "aggs": {
+                                        "server_pktlen": {
+                                            "sum": {
+                                                "field": "server_pktlen"
+                                            }
+                                        },
+                                        "client_pktlen": {
+                                            "sum": {
+                                                "field": "client_pktlen"
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
                 }
             }
         }
+
         self.assertEqual(es_pipe, expect)
 
     def test_schema(self):
@@ -166,32 +167,32 @@ class TestPipeline(unittest.TestCase):
                 "component": {
                     "terms": {
                         "field": "client_component"
-                    }
-                },
-                "aggs": {
-                    "aggs": {
-                        "ts": {
-                            "date_histogram": {
-                                "field": "ts",
-                                "format": "epoch_second"
-                            }
-                        },
-                        "aggs": {
-                            "server_pktlen": {
-                                "sum": {
-                                    "field": "server_pktlen"
-                                }
-                            },
-                            "client_pktlen": {
-                                "sum": {
-                                    "field": "client_pktlen"
-                                }
-                            }
-                        }
                     },
-                    "server_ip": {
-                        "terms": {
-                            "field": "server_ip"
+                    "aggs": {
+                        "server_ip": {
+                            "terms": {
+                                "field": "server_ip"
+                            },
+                            "aggs": {
+                                "ts": {
+                                    "date_histogram": {
+                                        "field": "ts",
+                                        "format": "epoch_second"
+                                    },
+                                    "aggs": {
+                                        "server_pktlen": {
+                                            "sum": {
+                                                "field": "server_pktlen"
+                                            }
+                                        },
+                                        "client_pktlen": {
+                                            "sum": {
+                                                "field": "client_pktlen"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
