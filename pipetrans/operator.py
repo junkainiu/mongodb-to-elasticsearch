@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from pipetrans.errors import CommandError, OperatorError
-from pipetrans.keys import BUCKETS_AGGREGATE_KEYS, BUCKETS_AGGREGATE_OPTIONALS
+from pipetrans.keys import BUCKETS_AGGREGATE_KEYS, BUCKETS_AGGREGATE_OPTIONALS, METRICS_AGGREGATE_KEYS
 
 _operators = {}
 
@@ -179,19 +179,24 @@ class GroupMetricOperator(GroupOperator):
                 }
             }
         }
+        break_mark = False
         aggs = es_commands['aggs']
-        while aggs.get('aggs'):
-            aggs = aggs['aggs']
-    
-        if len(aggs) > 1:
-            aggs.update(commands)
-        elif len(aggs) == 1:
-            if aggs.items()[0][1].keys()[0] in BUCKETS_AGGREGATE_KEYS:
-                aggs['aggs'] = commands
-            else:
-                aggs.update(commands)
-        else:
-            aggs.update(commands)
+        while aggs:
+            if break_mark:
+                break
+            for k, v in aggs.iteritems():
+                if 'aggs' in v:
+                    aggs = v['aggs']
+                else:
+                    for key in METRICS_AGGREGATE_KEYS:
+                        if key in v:
+                            aggs = aggs
+                            break_mark = True
+                    if break_mark:
+                        break
+                    aggs = v.setdefault('aggs', {})
+
+        aggs.update(commands)
         return es_commands
 
 
@@ -238,7 +243,11 @@ class GroupBucketOperator(GroupOperator):
         }
         aggs = es_commands['aggs']
         while aggs:
-            aggs = aggs.setdefault('aggs', {})
+            for k, v in aggs.iteritems():
+                if 'aggs' in v:
+                    aggs = v['aggs']
+                else:
+                    aggs = v.setdefault('aggs', {})
         aggs.update(commands)
         return es_commands
 
