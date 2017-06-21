@@ -12,5 +12,6 @@ BUCKETS_AGGREGATE_KEYS = [
 BUCKETS_AGGREGATE_OPTIONALS = [
     'format',
     'order',
-    'size'
+    'size',
+    'interval'
 ]
