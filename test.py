@@ -112,7 +112,7 @@ class TestPipeline(unittest.TestCase):
                         "_id": {
                             "ts": "$ts",
                             "component": "$client_component",
-                            "server_ip": "$server_ip_port"
+                            "server_ip": "$server_ip"
                         },
                         "client_pktlen": {"$sum": "$client_pktlen"},
                         "server_pktlen": {"$sum": "$server_pktlen"}
@@ -126,7 +126,7 @@ class TestPipeline(unittest.TestCase):
                     'format': 'epoch_second'
                 }
             },
-            'order': ['component', 'server_ip_port', 'ts']
+            'order': ['component', 'server_ip', 'ts']
         }
         es_pipe = pipetrans(mongo_pipe, schema)
         expect = {

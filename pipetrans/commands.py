@@ -91,15 +91,15 @@ class GroupCommand(Command):
         elif "_id" not in value:
             raise self.make_error("$group specification must include an _id")
         operators = []
+        _id = value.pop('_id')
+        if _id:
+            order = schema.get('order', [])
+            sorted_keys = list_sort(_id.keys(), order)
+            for _k in sorted_keys:
+                _v = _id[_k]
+                operators.append(OperatorFactory.new_group(_k, _v, schema))
         for k, v in value.iteritems():
-            if k == "_id":
-                order = schema.get('order', [])
-                sorted_keys = list_sort(v.keys(), order)
-                for _k in sorted_keys:
-                    _v = v[_k]
-                    operators.append(OperatorFactory.new_group(_k, _v, schema))
-            else:
-                operators.append(OperatorFactory.new_group(k, v, schema))
+            operators.append(OperatorFactory.new_group(k, v, schema))
         self.operators = operators
 
     def build_es(self, es_commands):
