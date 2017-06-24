@@ -61,34 +61,38 @@ pipetrans(mongo_pipe)
         }
     },
     "aggs": {
-        "aggs": {
-            "component": {
-                "terms": {
-                    "field": "client_component"
-                }
+        "component": {
+            "terms": {
+                "field": "client_component"
             },
             "aggs": {
-                "aggs": {
-                    "server_pktlen": {
-                        "sum": {
-                            "field": "server_pktlen"
-                        }
-                    },
-                    "client_pktlen": {
-                        "sum": {
-                            "field": "client_pktlen"
-                        }
-                    }
-                },
-                "server_ip": {
+                "ts": {
                     "terms": {
-                        "field": "server_ip"
+                        "field": "ts"
+                    },
+                    "aggs": {
+                        "server_ip": {
+                            "terms": {
+                                "field": "server_ip"
+                            },
+                            "aggs": {
+                                "server_pktlen": {
+                                    "sum": {
+                                        "field": "server_pktlen"
+                                    }
+                                },
+                                "client_pktlen": {
+                                    "sum": {
+                                        "field": "client_pktlen"
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
     }
 }
-
 
 ```
