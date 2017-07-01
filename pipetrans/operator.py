@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 from pipetrans.errors import CommandError, OperatorError
 from pipetrans.keys import BUCKETS_AGGREGATE_KEYS, BUCKETS_AGGREGATE_OPTIONALS, METRICS_AGGREGATE_KEYS
 
@@ -10,6 +9,11 @@ class OperatorFactory(object):
 
     @staticmethod
     def new_match(key, value, schema):
+        if key == '$and':
+            return MatchAndOperator(key, value, schema)
+        elif key == '$or':
+            return MatchOrOperator(key, value, schema)
+
         if not isinstance(value, dict):
             return MatchEqualOperator(key, value, schema)
         else:
@@ -21,7 +25,10 @@ class OperatorFactory(object):
                 else:
                     raise CommandError("unknow $match operator '%s'" % name, "$match")
             else:
-                return MatchCombineOperator(key, value, schema)
+                if value.keys()[0] in MatchRangeOperator.names:
+                    return MatchRangeOperator(key, value, schema)
+                else:
+                    return MatchCombineOperator(key, value, schema)
 
     @staticmethod
     def new_group(key, value, schema):
@@ -75,66 +82,139 @@ class MatchKeyOperator(MatchOperator):
         self.value = value
         self.schema = schema
 
+    def build_es(self):
+        raise NotImplementedError
+
     def export_es(self, es_commands):
-        return self.build_es(es_commands)
+        command = self.build_es()
+        if 'must' not in es_commands['query']['bool']:
+            es_commands['query']['bool']['must'] = []
+        es_commands['query']['bool']['must'].append(command)
+        return es_commands
 
 
 class MatchEqualOperator(MatchKeyOperator):
 
-    def build_es(self, es_commands):
-        commands = {
-            'bool': {
-                'should': [
-                    {'term': {self.key: self.value}}
-                ]
-            }
-        }
-        es_commands['query']['bool']['must'].append(commands)
-        return es_commands
+    def build_es(self):
+        return {'term': {self.key: self.value}}
 
 
 class MatchInOperator(MatchKeyOperator):
 
     name = "$in"
 
-    def build_es(self, es_commands):
-        commands = {
+    def build_es(self):
+        command = {
             'bool': {
                 'should': [
                     {'term': {self.key: v}} for v in self.value
                 ]
             }
         }
-        es_commands['query']['bool']['must'].append(commands)
+        return command
+
+    def export_es(self, es_commands):
+        command = self.build_es()
+        if 'must' not in es_commands['query']['bool']:
+            es_commands['query']['bool']['must'] = []
+        es_commands['query']['bool']['must'].append(command)
+        return es_commands
+
+
+class MatchOrOperator(MatchKeyOperator):
+
+    name = "$or"
+
+    def __init__(self, *args, **kwargs):
+        super(MatchOrOperator, self).__init__(*args, **kwargs)
+        operators = []
+        for value in self.value:
+            o = []
+            if not isinstance(value, dict):
+                raise self.make_error("$or specification must be an object %s" % str(value))
+            for k, v in value.iteritems():
+                o.append(OperatorFactory.new_match(k, v, self.schema))
+            operators.append(o)
+        self.operators = operators
+
+    def build_es(self):
+        return {
+            'bool': {
+                'should': [
+                    {'bool': {'must': [op.build_es() for op in ops]}}
+                    for ops in self.operators
+                ]
+            }
+        }
+
+    def export_es(self, es_commands):
+        commands = self.build_es()
+        if 'should' not in es_commands['query']['bool']:
+            es_commands['query']['bool']['should'] = []
+        for command in commands['bool']['should']:
+            es_commands['query']['bool']['should'].append(command)
+        # should match at least one
+        es_commands['query']['bool']['minimum_should_match'] = 1
+        return es_commands
+
+
+class MatchAndOperator(MatchKeyOperator):
+
+    name = "$and"
+
+    def __init__(self, *args, **kwargs):
+        super(MatchAndOperator, self).__init__(*args, **kwargs)
+        operators = []
+        for value in self.value:
+            o = []
+            if not isinstance(value, dict):
+                raise self.make_error("$and specification must be an object %s" % str(value))
+            for k, v in value.iteritems():
+                o.append(OperatorFactory.new_match(k, v, self.schema))
+            operators.append(o)
+        self.operators = operators
+
+    def build_es(self):
+        return {
+            'bool': {
+                'must': [
+                    {'bool': {'must': [op.build_es() for op in ops]}}
+                    for ops in self.operators
+                ]
+            }
+        }
+
+    def export_es(self, es_commands):
+        commands = self.build_es()
+        if 'must' not in es_commands['query']['bool']:
+            es_commands['query']['bool']['must'] = []
+        for command in commands['bool']['must']:
+            es_commands['query']['bool']['must'].append(command)
         return es_commands
 
 
 class MatchRangeOperator(MatchKeyOperator):
 
-    def __init__(self, key, value, schema):
-        self.oper = self.name[1:]
-        super(MatchRangeOperator, self).__init__(key, value, schema)
+    names = ['$gte', '$lte', '$lt', '$gt']
 
-    def build_es(self, es_commands):
-        commands = {
+    def build_es(self):
+        return {
             'range': {
                 self.key: {
-                    self.oper: self.value
+                    k[1:]: v
+                    for k, v in self.value.items()
+                    if k in self.names
                 }
             }
         }
-        es_commands['query']['bool']['must'].append(commands)
+        return commands
+
+    def export_es(self, es_commands):
+        command = self.build_es()
+        if 'must' not in es_commands['query']['bool']:
+            es_commands['query']['bool']['must'] = []
+        es_commands['query']['bool']['must'].append(command)
         return es_commands
-
-
-class MatchGteOperator(MatchRangeOperator):
-
-    name = "$gte"
-
-
-class MatchLtOperator(MatchRangeOperator):
-
-    name = "$lt"
 
 
 class MatchCombineOperator(MatchKeyOperator):
@@ -147,9 +227,7 @@ class MatchCombineOperator(MatchKeyOperator):
         self.combined_ops = combined_ops
 
     def export_es(self, es_commands):
-        for op in self.combined_ops:
-            es_commands = op.export_es(es_commands)
-        return es_commands
+        return [op.export_es(es_commands) for op in self.combined_ops]
 
 
 class GroupOperator(Operator):

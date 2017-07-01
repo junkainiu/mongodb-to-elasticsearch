@@ -69,9 +69,7 @@ class MatchCommand(Command):
     def build_es(self, es_commands):
         if not es_commands.get('query'):
             es_commands['query'] = {
-                'bool': {
-                    'must': []
-                }
+                'bool': {}
             }
         return es_commands
 
